@@ -10,9 +10,11 @@ import ipaddress
 import sys
 import time
 import os
-import smtplib 
+import smtplib
+import enum
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
 
 
 def main():
@@ -84,82 +86,83 @@ def initial_dialog():
     time.sleep(1) 
     return resultList # as a result we get list of IPs to work with   
 
-def good_time(localtime,mode):
-    ''' The function is created to give well readable time format. The function has two parameters,
-    localtime is an instance of structure of time.localtime() structure. Mode could be 0 or 1 or 2. If 0 method returns string
-    Date: {2}.{1}.{0} Time UTC+3 {3}:{4}:{5} where 0 is day, 1 is month, 2 is a year and 3,4,5 is hour,
-    minute and second relatively. If  mode=1 is chosen it retruns string {2}_{1}_{0}_timeUTC3_{3} where 0 is day,
-    1 is month and 2 is year and 3 is hour. If mode=2 is chosen string date{2}_{1}_{0} is returned where 0 is day, 1 is month,
-    2 is year'''
-    if(mode==0):
-        d=[localtime.tm_mday,localtime.tm_mon, localtime.tm_year, localtime.tm_hour, localtime.tm_min, localtime.tm_sec]
-        p=d
-        for i in range(0,len(d)):
-            if int(p[i])<10:
-                p[i]="0"+str(p[i])
-        d=p               
-        return "Date: {2}.{1}.{0} Time UTC+3 {3}:{4}:{5}".format(*d) # *d means that we unpack list as individual values
-    if(mode==1):
-        d=[localtime.tm_mday,localtime.tm_mon, localtime.tm_year, localtime.tm_hour]
-        p=d
-        for i in range(0,len(d)):
-            if int(p[i])<10:
-                p[i]="0"+str(p[i])
-        return "date{2}_{1}_{0}_timeUTC3_{3}".format(*d)
-    if(mode==2):
-        d=[localtime.tm_mday,localtime.tm_mon, localtime.tm_year]
-        p=d
-        for i in range(0,len(d)):
-            if int(p[i])<10:
-                p[i]="0"+str(p[i])
-        return "date{2}_{1}_{0}".format(*d)
-    
+class MyTimeMode(enum.Enum): 
+    full = "Date: {2}.{1}.{0} Time UTC+3 {3}:{4}:{5}"
+    middle = "date{2}_{1}_{0}_timeUTC3_{3}"
+    short = "date{2}_{1}_{0}"
+
+class MyTime:
+    def __init__(self,myTimeDisplayMode):
+        self.myTimeValue=time.localtime()
+        self.myTimeDisplayMode=myTimeDisplayMode
+
+    def __str__(self):
+        timeStructure=map(lambda x: "0"+str(x) if x<10 else str(x),[self.myTimeValue.tm_mday,self.myTimeValue.tm_mon,
+                                                        self.myTimeValue.tm_year,self.myTimeValue.tm_hour,
+                                                        self.myTimeValue.tm_min, self.myTimeValue.tm_sec])
+        return self.myTimeDisplayMode.value.format(*timeStructure)
+
     
 class MyMailActivity:
     def send_negative_mail(ipAddress,email_sender,email_receiver):
         '''The method sends negative mail if one ip is not reachable'''
         ipAddress=str(ipAddress)
-        time1str=good_time(localtime=time.localtime(),mode=0)
-        # Attention! write your own mail subject, do not delete words inside brackets time1str
-        subject=f"MTT Oy error notification {time1str}"
+        # Attention! write your own mail subject, do not delete words inside brackets str(MyTime(MyTimeMode.full))
+        subject=f"MTT Oy error notification {str(MyTime(MyTimeMode.full))}"
         msg = MIMEMultipart() 
         msg['From'] = email_sender
         msg['To'] = ", ".join(email_receiver)
         msg['Subject']= subject
-        # Attention! write your own mail message, do not delete words inside brackets ipAddress and time1str
-        body=f"Dear Partner,\n\nWe observe that address {ipAddress} is not reachable within last 30 seconds. Now {time1str}.\n\nWe ask you to investigate the issue and undertake all necessary steps to solve the problem.\n\nBest Regards,\nMTT Oy Network Monitor Robot"
+        # Attention! write your own mail message, do not delete words inside brackets ipAddress and str(MyTime(MyTimeMode.full))
+        body=f"Dear Partner,\n\nWe observe that address {ipAddress} is not reachable within last 30 seconds. Now {str(MyTime(MyTimeMode.full))}.\n\nWe ask you to investigate the issue and undertake all necessary steps to solve the problem.\n\nBest Regards,\nMTT Oy Network Monitor Robot"
 
         msg.attach(MIMEText(body, 'plain'))
-        text = msg.as_string()  
-
-        connection = smtplib.SMTP('smtp.gmail.com', 587) # Attention! This should be settings of you smtp server
-        connection.starttls()  
-        connection.login(email_sender, 'YourPasswordOfTheMailboxYouWillSendMailsFrom') # Attention! Put password of your mailbox to send mails about alarms from
-        connection.sendmail(email_sender, email_receiver, text)
-        connection.quit()
+        text = msg.as_string() 
+        try:
+            connection = smtplib.SMTP('smtp.gmail.com', 587) # Attention! This should be settings of you smtp server
+            connection.starttls()  
+            connection.login(email_sender, 'password') # Attention! Put password of your mailbox to send mails about alarms from
+            connection.sendmail(email_sender, email_receiver, text)
+            connection.quit()
+        except:
+            print("Connection to SMTP server failed.")
+            errormessage1=(sys.exc_info())
+            print(errormessage1)
+            with open(file="ErrorLog.txt", mode="a") as f:
+                f.write(str(MyTime(MyTimeMode.full)))
+                f.write("Connection to SMTP server failed.")
+                f.write(errormessage1)
+            
 
             
     def send_positive_mail(ipAddress,email_sender,email_receiver):
         '''The method sends positive mail if ip is reachable again'''
         ipAddress=str(ipAddress)
-        time1str=good_time(localtime=time.localtime(),mode=0)
-        # Attention! write your own mail subject, do not delete words inside brackets time1str
-        subject=f"MTT Oy recovery notification {time1str}"
+        # Attention! write your own mail subject, do not delete words inside brackets str(MyTime(MyTimeMode.full))
+        subject=f"MTT Oy recovery notification {str(MyTime(MyTimeMode.full))}"
         msg = MIMEMultipart() 
         msg['From'] = email_sender
         msg['To'] = ", ".join(email_receiver)
         msg['Subject']= subject
-        # Attention! write your own message, do not delete words inside brackets ipAddress and time1str
-        body=f"Dear Partner,\n\nWe observe that address {ipAddress} has recovered and is stable within last 60 seconds. Now {time1str}.\n\nWe ask you to investigate and provide us RFO.\n\nBest Regards,\nMTT Oy Network Monitor Robot"
+        # Attention! write your own message, do not delete words inside brackets ipAddress and str(MyTime(MyTimeMode.full))
+        body=f"Dear Partner,\n\nWe observe that address {ipAddress} has recovered and is stable within last 60 seconds.Now {str(MyTime(MyTimeMode.full))}.\n\nWe ask you to investigate and provide us RFO.\n\nBest Regards,\nMTT Oy Network Monitor Robot"
 
         msg.attach(MIMEText(body, 'plain'))
         text = msg.as_string()  
-
-        connection = smtplib.SMTP('smtp.gmail.com', 587) # Attention! This should be settings of you smtp server
-        connection.starttls()  
-        connection.login(email_sender, 'YourPasswordOfTheMailboxYouWillSendMailsFrom') # Attention! Put password of your mailbox to send mails about alarms from
-        connection.sendmail(email_sender, email_receiver, text)
-        connection.quit()
+        try:
+            connection = smtplib.SMTP('smtp.gmail.com', 587) # Attention! This should be settings of you smtp server
+            connection.starttls()  
+            connection.login(email_sender, 'password') # Attention! Put password of your mailbox to send mails about alarms from
+            connection.sendmail(email_sender, email_receiver, text)
+            connection.quit()
+        except:
+            print("Connection to SMTP server failed.")
+            errormessage1=(sys.exc_info())
+            print(errormessage1)
+            with open(file="ErrorLog.txt", mode="a") as f:
+                f.write(str(MyTime(MyTimeMode.full)))
+                f.write("Connection to SMTP server failed.")
+                f.write(errormessage1)
 
 class IP_Op:
     
@@ -320,24 +323,21 @@ class IP_Op:
         
         a=os.system(f"ping -n 1 {b}") # Attention! you can try to change the command if you do not use OS Windows
         
-        h=good_time(time.localtime(),1)
-        h2=good_time(time.localtime(),2)
         
         current_directory = os.getcwd() #reads current directory
         upperFolderName=str(b)
-        folder1name=str(b)+h2
+        folder1name=str(b)+str(MyTime(MyTimeMode.short))
         folder1=os.path.join(current_directory, upperFolderName, folder1name) # build name of folder to prit files into
         if not os.path.exists(folder1): # if the path do not exist then 
             os.makedirs(folder1) # create it now!
                 
-        with open(os.path.join(folder1,f"ping_{h}_{b}.txt"),mode="a") as f:
-            t=good_time(time.localtime(),0)
+        with open(os.path.join(folder1,f"ping_{str(MyTime(MyTimeMode.middle))}_{b}.txt"),mode="a") as f:
             if(a==int(0)):
-                f.write(f"The remote destination {b} is reachable, everyting is OKAY. {t} \n")
+                f.write(f"The remote destination {b} is reachable, everyting is OKAY. {str(MyTime(MyTimeMode.full))} \n")
                 time.sleep(int(t100))
                 return (1,0)
             elif(a==int(1)):
-                f.write(f"Ping {b} failed! {t} \n")
+                f.write(f"Ping {b} failed! {str(MyTime(MyTimeMode.full))} \n")
                 time.sleep(int(t100))
                 return(0,1)
         
@@ -357,13 +357,11 @@ class IP_Op:
             # block below writes percent of positive and negative attempt every hour
             if t.tm_min==59 and t.tm_sec>50 and (positivePingAttempts>10 or negativePingAttempts>10):
                 # we need positivePingAttempts>10 or negativePingAttempts>10 to prevent event to take place several times
-                h=good_time(time.localtime(),1)
-                h2=good_time(time.localtime(),2)
                 current_directory = os.getcwd()
                 upperFolderName=str(b)
-                folder1name=str(b)+h2
+                folder1name=str(b)+str(MyTime(MyTimeMode.short))
                 folder1=os.path.join(current_directory, upperFolderName, folder1name)
-                with open(os.path.join(folder1,f"ping_{h}_{b}.txt"),mode="a") as f:
+                with open(os.path.join(folder1,f"ping_{str(MyTime(MyTimeMode.middle))}_{b}.txt"),mode="a") as f:
                     k=100*positivePingAttempts/(positivePingAttempts+negativePingAttempts)
                     f.write(f"{b}__positivePingAttempts_Number_is__{positivePingAttempts}\n")
                     f.write(f"{b}__negativePingAttempts_Number_is__{negativePingAttempts}\n")
@@ -382,12 +380,12 @@ class IP_Op:
             if negativeCounter==3 and negativeMailSent==False:
                 print("Negative mail was sent")
                 # Attention! Put your own mail settings in the code below, do not remove f"{b}":
-                MyMailActivity.send_negative_mail(f"{b}","YourMailBoxToSendMailNotificationsFrom@gmail.com",["Mailbox1ToSendNotificationsTo@gmail.com","Mailbox2ToSendNotificationsTo@gmail.com","Mailbox3ToSendNotificationsTo@gmail.com"])
+                MyMailActivity.send_negative_mail(f"{b}","1111@gmail.com",["1223@gmail.com","14448@gmail.com","17777@gmail.com"])
                 negativeMailSent=True
             if positiveCounter==20 and negativeMailSent==True:
                 print("Positive mail was sent")
                 # Attention!Put your own mail settings in the code below, do not remove f"{b}":
-                MyMailActivity.send_positive_mail(f"{b}","YourMailBoxToSendMailNotificationsFromr@gmail.com",["Mailbox1ToSendNotificationsTo@gmail.com","Mailbox2ToSendNotificationsTo@gmail.com","Mailbox3ToSendNotificationsTo@gmail.com"])
+                MyMailActivity.send_positive_mail(f"{b}","1111@gmail.com",["1223@gmail.com","14448@gmail.com","17777@gmail.com"])
                 negativeMailSent=False
 
 if __name__ == '__main__':
