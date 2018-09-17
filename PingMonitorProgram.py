@@ -80,8 +80,9 @@ class Main_Menu:
                 for i in resultList:
                     f.write(i+"\n")
         except FileNotFoundError:
-            print("The file IpAdressList.txt is not reachable or corrupted.\nTry to delete IpAdressList.txt if it exists and do initial setup process.\nThe program will be closed soon.\n")
-
+            print("The file IpAdressList.txt is not reachable or corrupted.")
+            print("Try to delete IpAdressList.txt if it exists and do initial setup process.")
+            print("The program will be closed soon.\n")
 
     def add_ip_tofile(file, IP):
         '''The function is used to add IP to the desired file'''
@@ -91,7 +92,6 @@ class Main_Menu:
             with open(file_name, mode="a") as f:
                 f.write(f"{IP[0]}\n")
             
-
     def what_ip_ismonitored(file):
         '''The funtcion shows what IPs are monitored in file, The fuction returns tuple which composed of
         List of ip and booilean value which prevents the program internal error if the file is empty or corrupted'''
@@ -261,7 +261,12 @@ class MyMailActivity:
         msg['To'] = ", ".join(email_receiver)
         msg['Subject']= subject
         # Attention! write your own mail message, do not delete words inside brackets ipAddress and str(MyTime(MyTimeMode.full))
-        body=f"Dear Partner,\n\nWe observe that address {ipAddress} is not reachable within last 30 seconds. Now {str(MyTime(MyTimeMode.full))}.\n\nWe ask you to investigate the issue and undertake all necessary steps to solve the problem.\n\nBest Regards,\nMTT Oy Network Monitor Robot"
+        body=f"""Dear Partner,\n\nWe observe that address {ipAddress} is not reachable within last 30 seconds.
+Now {str(MyTime(MyTimeMode.full))}.
+        
+We ask you to investigate the issue and undertake all necessary steps to solve the problem.
+        
+Best Regards,\nMTT Oy Network Monitor Robot"""
 
         msg.attach(MIMEText(body, 'plain'))
         text = msg.as_string() 
@@ -291,14 +296,20 @@ class MyMailActivity:
         msg['To'] = ", ".join(email_receiver)
         msg['Subject']= subject
         # Attention! write your own message, do not delete words inside brackets ipAddress and str(MyTime(MyTimeMode.full))
-        body=f"Dear Partner,\n\nWe observe that address {ipAddress} has recovered and is stable within last 60 seconds.Now {str(MyTime(MyTimeMode.full))}.\n\nWe ask you to investigate and provide us RFO.\n\nBest Regards,\nMTT Oy Network Monitor Robot"
+        body=f"""Dear Partner,\n\nWe observe that address {ipAddress} has recovered and is stable within last 60 seconds.
+Now {str(MyTime(MyTimeMode.full))}.
+        
+We ask you to investigate and provide us RFO.
+        
+Best Regards,\nMTT Oy Network Monitor Robot"""
 
         msg.attach(MIMEText(body, 'plain'))
         text = msg.as_string()  
         try:
             connection = smtplib.SMTP('smtp.gmail.com', 587) # Attention! This should be settings of you smtp server
             connection.starttls()  
-            connection.login(email_sender, 'YourMailBoxPassword') # Attention! Put password of your mailbox to send mails about alarms from
+            connection.login(email_sender, 'YourMailBoxPassword') 
+            # Attention! Put password of your mailbox to send mails about alarms from
             connection.sendmail(email_sender, email_receiver, text)
             connection.quit()
         except:
@@ -432,15 +443,15 @@ class MyPing(threading.Thread):
                 negativePingsInRow=negativePingsInRow+pingresult[1]                
             if negativePingsInRow==4 and pingFailedLetterWasSent==False:
                 print("Negative mail was sent")
-                # Attention! Put your own mail settings in the code below, do not remove f"{ipaddress}":
-                MyMailActivity.send_negative_mail(f"{self.ipaddress}","SendFromAddress@gmail.com",
-                                                  ["SendToAddress1@gmail.com","SendToAddress2@gmail.com","SendToAddress1@gmail.com"])
+                # Attention! Put your own mail settings in the code below, do not remove f"{self.ipaddress}:
+                MyMailActivity.send_negative_mail(f"{self.ipaddress}","SendFrom@gmail.com",
+                                                  ["SendTo1@gmail.com","SendTo2@gmail.com","SendTo3@gmail.com"])
                 pingFailedLetterWasSent=True
             if positivePingsInRow==20 and pingFailedLetterWasSent==True:
                 print("Positive mail was sent")
-                # Attention!Put your own mail settings in the code below, do not remove f"{ipaddress}":
-                MyMailActivity.send_positive_mail(f"{self.ipaddress}","SendFromAddress@gmail.com",
-                                                  ["SendToAddress1@gmail.com","SendToAddress2@gmail.com","SendToAddress3@gmail.com"])
+                # Attention!Put your own mail settings in the code below, do not remove f"{self.ipaddress}:
+                MyMailActivity.send_positive_mail(f"{self.ipaddress}","SendFrom@gmail.com",
+                                                  ["SendTo1@gmail.com","SendTo2@gmail.com","SendTo3@gmail.com"])
                 pingFailedLetterWasSent=False
 
                 
@@ -450,7 +461,6 @@ class MyPing(threading.Thread):
             
 if __name__ == '__main__':
     main()
-
 
 
 
