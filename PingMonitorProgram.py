@@ -45,6 +45,11 @@ def main():
         for i in IpMonitorThreads:
             i.join() # since fuction iside thread is infinite, join will never happen
             
+class PingResultError(Exception):
+    '''The exception is use to alarm coder if unexpected ping command results are recived'''
+    def __init__(self):
+        BaseException.__init__(self,"Unexpected results of os.system(f'ping -n 1 {self.ipaddress}')")
+            
 class Main_Menu:
     
     def ask_ip():
@@ -382,7 +387,7 @@ class MyPing(threading.Thread):
             pingResult=(0,1) # failed attempt
             return pingResult
         else:
-            pass
+            raise PingResultError
     def write_ping_result_to_file(self,pingResult):
         '''Is used to wirte ping reults to file, return path to the file'''
         currentDirectory=os.getcwd()
@@ -397,8 +402,10 @@ class MyPing(threading.Thread):
                 f.write(f"The remote destination {self.ipaddress} is reachable, everyting is OKAY. {str(MyTime(MyTimeMode.full))} \n")
             elif pingResult==(0,1):
                 f.write(f"Ping {self.ipaddress} failed! {str(MyTime(MyTimeMode.full))} \n")
-            else:
+            elif pingResult==None:
                 pass
+            else:
+                raise PingResultError
             FilePath=os.path.join(folderToSavePingResults,f"ping_{str(MyTime(MyTimeMode.middle))}_{self.ipaddress}.txt")
             return FilePath
                 
