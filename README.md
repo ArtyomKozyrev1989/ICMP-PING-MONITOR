@@ -7,4 +7,4 @@ The program need Python3 and initial setup for your needs, please follow comment
 
 Feel free to ask questions and give remommendations. Feel free to use the code in your projects or to to learn from.
 
-The program is not the final version, I'm going to add new changes in future, new contributors are welcome.
+The program the final version, you can also check ICMP_Ping_Monitor_True_CLI repository to find more sophisticated true CLI version of the program. Independent repository was created to keep two different user interfaces separately.
